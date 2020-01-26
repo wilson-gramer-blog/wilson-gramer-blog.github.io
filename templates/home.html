@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wilson Gramer’s Blog</title>
+
+    <!-- Local styles -->
+    <link rel="stylesheet" href="/styles/index.css">
+
+    <!-- Google fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Crimson+Pro:200,200i,600,600i|Fira+Code:200&display=swap">
+</head>
+
+<body>
+    <div class="navbar">
+        <a href="/">Wilson Gramer’s Blog</a>
+    </div>
+
+    <div class="post-excerpts">
+        {{ #postExcerpts }}
+        <div class="post">
+            <a href="{{ url }}">
+                <h1 class="title">{{ title }}</h1>
+            
+                <p class="post-date">{{ postDate }}</p>
+                
+                <div class="content">
+                    {{ excerpt }}&hellip;
+                </div>
+            </a>
+        </div>
+        {{ /postExcerpts }}
+    </div>
+</body>
+</html>

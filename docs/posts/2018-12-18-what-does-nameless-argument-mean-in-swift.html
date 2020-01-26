@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>What does _: (nameless argument) mean in Swift? - Wilson Gramer’s Blog</title>
+
+    <!-- Local styles -->
+    <link rel="stylesheet" href="/styles/index.css">
+    <link rel="stylesheet" href="/styles/hljs.css">
+
+    <!-- Google fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Crimson+Pro:200,200i,600,600i|Fira+Code:200&display=swap">
+</head>
+
+<body>
+    <div class="navbar">
+        <a href="/">Wilson Gramer’s Blog</a>
+    </div>
+
+    <div class="post">
+        <h1 class="title">What does _: (nameless argument) mean in Swift?</h1>
+        <p class="post-date">December 18, 2018</p>
+
+        <div class="content">
+            <p>If you’ve dived deep enough in Swift functions you have probably come across one looking like this:</p>
+<pre><code class="language-swift"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">myFunc</span><span class="hljs-params">(<span class="hljs-number">_</span>: <span class="hljs-keyword">Type</span>)</span></span>
+</code></pre>
+<p>After looking at it for a moment, you may have wondered, “why does this argument have no name?” Indeed, this argument cannot be used inside the function nor specified by name when calling the function.</p>
+<p>So why would something like this be useful? It essentially boils down to passing functions as parameters in other functions. Let’s say you have a function that looks like this:</p>
+<pre><code class="language-swift"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">run</span><span class="hljs-params">(every interval: TimeInterval, <span class="hljs-number">_</span> closure: <span class="hljs-params">(Date)</span></span></span> -&gt; <span class="hljs-type">Void</span>) {
+    <span class="hljs-comment">// execute closure every `interval` seconds, and pass</span>
+    <span class="hljs-comment">// the current date to it</span>
+}
+</code></pre>
+<p>Now let’s say I want to update my database with the current date every 5 seconds. Pretty simple:</p>
+<pre><code class="language-swift"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Database</span> </span>{
+
+    <span class="hljs-comment">// ...</span>
+    
+    <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">insert</span><span class="hljs-params">(date: Date)</span></span> {
+        <span class="hljs-comment">// ...</span>
+    }
+}
+
+<span class="hljs-keyword">let</span> myDatabase = <span class="hljs-type">Database</span>()
+run(every: <span class="hljs-number">5</span>) { myDatabase.insert(date: $<span class="hljs-number">0</span>) }
+
+<span class="hljs-comment">// shorter</span>
+run(every: <span class="hljs-number">5</span>, myDatabase.insert)
+</code></pre>
+<p>(Of course, this is a silly example, but you get the idea of where all this could be used.)</p>
+<p>However, what if I have a different function that I’d intend to run at repeated intervals, that <em>doesn’t accept any parameters?</em> One way of doing this is the following:</p>
+<pre><code class="language-swift">run(every: ...) { <span class="hljs-number">_</span> <span class="hljs-keyword">in</span> updateStuff() }
+</code></pre>
+<p>Alternatively, if you have access to the function and you only intend it to be called by the <code>run</code> function, a shorter way is by using a nameless argument:</p>
+<pre><code class="language-swift"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">updateStuff</span><span class="hljs-params">(<span class="hljs-number">_</span>: Date)</span></span> { ... }
+</code></pre>
+<p>Now <code>updateStuff</code>‘s type is <code>(Date) -&gt; Void</code>, so you can call <code>run</code> like this:</p>
+<pre><code class="language-swift">run(every: ..., updateStuff)
+</code></pre>
+<p>The only real-life use case I can find for nameless arguments is when using block-based timers —</p>
+<pre><code class="language-swift"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ViewController</span>: <span class="hljs-title">UIViewController</span> </span>{
+    
+    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">viewDidAppear</span><span class="hljs-params">(<span class="hljs-number">_</span> animated: Bool)</span></span> {
+        <span class="hljs-keyword">super</span>.viewDidAppear(animated)
+        
+        <span class="hljs-comment">// block: accepts a (Timer) -&gt; Void closure</span>
+        <span class="hljs-type">Timer</span>(timeInterval: <span class="hljs-number">5</span>, repeats: <span class="hljs-literal">true</span>, block: <span class="hljs-keyword">self</span>.updateUI)
+    }
+    
+    <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">updateUI</span><span class="hljs-params">(<span class="hljs-number">_</span>: Timer)</span></span> { ... }
+}
+</code></pre>
+<p>So, nameless arguments. Not a super neat Swift feature or a game-changer in programming productivity, but it’s nice to know that they exist. Thanks for reading!</p>
+<hr>
+<p>I stumbled across this as I’m rewriting <a href="http://superhomeworkapp.com/">SuperHomework</a>‘s backend in Swift using <a href="http://vapor.codes/">Vapor</a>. I know I haven’t put SuperHomework out there very much lately, but stay tuned for a steady flow of awesome new features soon!</p>
+
+        </div>
+    </div>
+</body>
+</html>
