@@ -3,6 +3,10 @@ title: Recreating the iOS 12.2 Wallet table view
 postDate: February 2, 2019
 ---
 
+**UPDATE:** This feature is now built-in starting with iOS 13 via the `insetGrouped` table view style!
+
+---
+
 The Wallet app was redesigned in iOS 12.2 with a fresher, more rounded look. This is most prominent in the table views scattered throughout the app — sections are rounded at the edges, similar how a detail table view looks on iPad. It looks really good everywhere, though, so let’s try to recreate it!
 
 (TL;DR: [Here’s the code.](https://gist.github.com/Wilsonator5000/67e1dd18cda7ab46d507a165d6d1bc42))
@@ -138,5 +142,7 @@ func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forR
 ...and here’s our final result!
 
 ![Our recreation of the Wallet app’s table view as shown in SuperHomework](https://wgramer.files.wordpress.com/2019/02/img_4042.png?w=268&h=581)
+
+---
 
 Thanks for reading! If you want to try this out in your app, download the full code [here](https://gist.github.com/Wilsonator5000/67e1dd18cda7ab46d507a165d6d1bc42).

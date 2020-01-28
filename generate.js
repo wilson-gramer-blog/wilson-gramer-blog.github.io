@@ -1,6 +1,6 @@
 import fse from "fs-extra";
 import MarkdownIt from "markdown-it";
-import hljs from "highlight.js";
+import prism from "markdown-it-prism";
 import yamlFront from "yaml-front-matter";
 import mustache from "mustache";
 import html2plaintext from "html2plaintext";
@@ -15,15 +15,10 @@ const markdownParser = new MarkdownIt({
     langPrefix: "language-",
     linkify: true,
     typographer: true,
-    highlight: (str, lang) => {
-        if (lang && hljs.getLanguage(lang)) {
-            try {
-                return hljs.highlight(lang, str).value;
-            } catch {}
-        }
+});
 
-        return ""; // use external default escaping
-    }
+markdownParser.use(prism, {
+    
 });
 
 const readFile = path => fse.readFile(path, "utf8");

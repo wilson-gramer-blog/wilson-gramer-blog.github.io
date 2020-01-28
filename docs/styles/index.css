@@ -13,10 +13,20 @@ a {
     text-decoration: none;
 }
 
-.navbar {
+hr {
+    width: 50%;
+    opacity: 0.5;
+    margin: 2em auto;
+}
+
+.navbar, .back-to-top {
     font-size: 16pt;
     text-align: center;
     padding-bottom: 1em;
+}
+
+.back-to-top {
+    padding-top: 2em;
 }
 
 .post .title {
@@ -46,6 +56,7 @@ a {
 .post .content code {
     font-family: "Fira Code", monospace;
     font-size: 14pt;
+    margin: 0 0.5em;
 }
 
 .post .content pre {
@@ -53,4 +64,13 @@ a {
     width: 100%;
     white-space: pre-wrap;
     word-wrap: break-word;
+}
+
+.post .content pre > code {
+    margin: unset;
+}
+
+.post .content p > img {
+    display: block;
+    margin: 0 auto;
 }

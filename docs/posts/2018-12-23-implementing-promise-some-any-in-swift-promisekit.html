@@ -5,7 +5,7 @@
 
     <!-- Local styles -->
     <link rel="stylesheet" href="/styles/index.css">
-    <link rel="stylesheet" href="/styles/hljs.css">
+    <link rel="stylesheet" href="/styles/prism.css">
 
     <!-- Google fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Crimson+Pro:200,200i,600,600i|Fira+Code:200&display=swap">
@@ -22,185 +22,189 @@
 
         <div class="content">
             <p><a href="https://github.com/mxcl/PromiseKit">PromiseKit</a> is a popular library for Swift programs that helps make asynchronous code more readable. Essentially it works like this:</p>
-<pre><code class="language-swift">firstly {
-    makeNetworkRequest()
-}.then {
-    downloadUserProfile()
-}.then { profile <span class="hljs-keyword">in</span>
-    logInUser(userProfile: profile)
-}.ensure {
-    updateUI() <span class="hljs-comment">// always runs</span>
-}.<span class="hljs-keyword">catch</span> { error <span class="hljs-keyword">in</span>
-    handleError(error)
-}
+<pre class="language-swift"><code class="language-swift">firstly <span class="token punctuation">{</span>
+    <span class="token function">makeNetworkRequest</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span><span class="token punctuation">.</span>then <span class="token punctuation">{</span>
+    <span class="token function">downloadUserProfile</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span><span class="token punctuation">.</span>then <span class="token punctuation">{</span> profile <span class="token keyword">in</span>
+    <span class="token function">logInUser</span><span class="token punctuation">(</span>userProfile<span class="token punctuation">:</span> profile<span class="token punctuation">)</span>
+<span class="token punctuation">}</span><span class="token punctuation">.</span>ensure <span class="token punctuation">{</span>
+    <span class="token function">updateUI</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// always runs</span>
+<span class="token punctuation">}</span><span class="token punctuation">.</span><span class="token keyword">catch</span> <span class="token punctuation">{</span> error <span class="token keyword">in</span>
+    <span class="token function">handleError</span><span class="token punctuation">(</span>error<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <p>…where each function returns a “promise” — a type that can either “fulfill” with a value or “reject” with an error. When a promise in the chain rejects, the catch function is called as shown above and the chain halts.</p>
 <p>One other useful thing PromiseKit provides is the ability to run multiple promises concurrently and return an array of all the values fulfilled. It works by using the <code>when</code> function:</p>
-<pre><code class="language-swift">when(fulfilled: downloadA(), downloadB()).then { a, b <span class="hljs-keyword">in</span>
-    doStuff(with: a, and: b)
-}.<span class="hljs-keyword">catch</span> { error <span class="hljs-keyword">in</span>
-    handleError(error)
-}
+<pre class="language-swift"><code class="language-swift"><span class="token function">when</span><span class="token punctuation">(</span>fulfilled<span class="token punctuation">:</span> <span class="token function">downloadA</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">downloadB</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>then <span class="token punctuation">{</span> a<span class="token punctuation">,</span> b <span class="token keyword">in</span>
+    <span class="token function">doStuff</span><span class="token punctuation">(</span>with<span class="token punctuation">:</span> a<span class="token punctuation">,</span> and<span class="token punctuation">:</span> b<span class="token punctuation">)</span>
+<span class="token punctuation">}</span><span class="token punctuation">.</span><span class="token keyword">catch</span> <span class="token punctuation">{</span> error <span class="token keyword">in</span>
+    <span class="token function">handleError</span><span class="token punctuation">(</span>error<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <p>…if any of the promises reject, then the <code>catch</code> function is called.</p>
 <p>However, what if we want to apply a task to many inputs and run them all concurrently, independent of each other’s error status? JavaScript’s <a href="http://bluebirdjs.com/docs/api/promise.some.html">bluebird.js</a> library offers the feature we want through <code>Promise.some</code>, where the number of promises specified are executed regardless if some of them reject. If all of them reject, then the <code>catch</code> function is called. Behavior like this is useful in situations where, for example, you need to send a notification to a group of users (eg. in a group chat) and don’t want a single user’s error to prevent the other users from receiving the notification.</p>
 <p>So how can we implement this in PromiseKit? Essentially, I copied the code from PromiseKit’s <code>when</code> function, which combines all the promises into a single promise, and modified it to return a <code>Maybe</code> type (like in Google’s <a href="https://github.com/google/promises">Promises</a> library), instead of rejecting the aggregate promise. The aggregate promise is only rejected with an <code>AllPromisesFailedError</code> if all the promises reject.</p>
 <p>Here’s my implementation below for easy copy/pasting; I’ll walk you through how it works next:</p>
-<pre><code class="language-swift"><span class="hljs-class"><span class="hljs-keyword">enum</span> <span class="hljs-title">Maybe</span>&lt;<span class="hljs-title">Value</span>&gt; </span>{
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">enum</span> <span class="token builtin">Maybe</span><span class="token operator">&lt;</span><span class="token builtin">Value</span><span class="token operator">></span> <span class="token punctuation">{</span>
     
-    <span class="hljs-keyword">case</span> value(<span class="hljs-type">Value</span>)
-    <span class="hljs-keyword">case</span> error(<span class="hljs-type">Error</span>)
+    <span class="token keyword">case</span> <span class="token function">value</span><span class="token punctuation">(</span><span class="token builtin">Value</span><span class="token punctuation">)</span>
+    <span class="token keyword">case</span> <span class="token function">error</span><span class="token punctuation">(</span><span class="token builtin">Error</span><span class="token punctuation">)</span>
     
-    <span class="hljs-keyword">init</span>(<span class="hljs-number">_</span> value: <span class="hljs-type">Value</span>) {
-        <span class="hljs-keyword">self</span> = .value(value)
-    }
+    <span class="token keyword">init</span><span class="token punctuation">(</span><span class="token number">_</span> value<span class="token punctuation">:</span> <span class="token builtin">Value</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">self</span> <span class="token operator">=</span> <span class="token punctuation">.</span><span class="token function">value</span><span class="token punctuation">(</span>value<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
     
-    <span class="hljs-keyword">init</span>(<span class="hljs-number">_</span> error: <span class="hljs-type">Error</span>) {
-        <span class="hljs-keyword">self</span> = .error(error)
-    }
+    <span class="token keyword">init</span><span class="token punctuation">(</span><span class="token number">_</span> error<span class="token punctuation">:</span> <span class="token builtin">Error</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">self</span> <span class="token operator">=</span> <span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span>error<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
     
-    <span class="hljs-keyword">var</span> value: <span class="hljs-type">Value?</span> {
-        <span class="hljs-keyword">if</span> <span class="hljs-keyword">case</span> .value(<span class="hljs-keyword">let</span> value) = <span class="hljs-keyword">self</span> {
-            <span class="hljs-keyword">return</span> value
-        } <span class="hljs-keyword">else</span> {
-            <span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>
-        }
-    }
+    <span class="token keyword">var</span> value<span class="token punctuation">:</span> <span class="token builtin">Value</span><span class="token operator">?</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token keyword">case</span> <span class="token punctuation">.</span><span class="token function">value</span><span class="token punctuation">(</span><span class="token keyword">let</span> value<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token keyword">self</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> value
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token constant">nil</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
     
-    <span class="hljs-keyword">var</span> error: <span class="hljs-type">Error?</span> {
-        <span class="hljs-keyword">if</span> <span class="hljs-keyword">case</span> .error(<span class="hljs-keyword">let</span> error) = <span class="hljs-keyword">self</span> {
-            <span class="hljs-keyword">return</span> error
-        } <span class="hljs-keyword">else</span> {
-            <span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>
-        }
-    }
+    <span class="token keyword">var</span> error<span class="token punctuation">:</span> <span class="token builtin">Error</span><span class="token operator">?</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token keyword">case</span> <span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token keyword">let</span> error<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token keyword">self</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> error
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token constant">nil</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
     
-    <span class="hljs-keyword">var</span> isSuccess: <span class="hljs-type">Bool</span> {
-        <span class="hljs-keyword">if</span> <span class="hljs-keyword">case</span> .value = <span class="hljs-keyword">self</span> {
-            <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>
-        } <span class="hljs-keyword">else</span> {
-            <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
-        }
-    }
+    <span class="token keyword">var</span> isSuccess<span class="token punctuation">:</span> <span class="token builtin">Bool</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token keyword">case</span> <span class="token punctuation">.</span>value <span class="token operator">=</span> <span class="token keyword">self</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token boolean">false</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
     
-    <span class="hljs-keyword">var</span> isError: <span class="hljs-type">Bool</span> {
-        <span class="hljs-keyword">return</span> !<span class="hljs-keyword">self</span>.isSuccess
-    }
-}
+    <span class="token keyword">var</span> isError<span class="token punctuation">:</span> <span class="token builtin">Bool</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token operator">!</span><span class="token keyword">self</span><span class="token punctuation">.</span>isSuccess
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
 
-<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">AllPromisesFailedError</span>&lt;<span class="hljs-title">T</span>&gt;: <span class="hljs-title">Error</span> </span>{
-    <span class="hljs-keyword">var</span> promises: [<span class="hljs-type">Promise</span>&lt;<span class="hljs-type">T</span>&gt;]
-}
+<span class="token keyword">struct</span> <span class="token builtin">AllPromisesFailedError</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">:</span> <span class="token builtin">Error</span> <span class="token punctuation">{</span>
+    <span class="token keyword">var</span> promises<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token builtin">Promise</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">]</span>
+<span class="token punctuation">}</span>
 
-<span class="hljs-comment">// MARK: `any` function</span>
-<span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">any</span>&lt;T&gt;<span class="hljs-params">(<span class="hljs-number">_</span> promises: [Promise&lt;T&gt;])</span></span> -&gt; <span class="hljs-type">Promise</span>&lt;[<span class="hljs-type">Maybe</span>&lt;<span class="hljs-type">T</span>&gt;]&gt; {
-    <span class="hljs-keyword">guard</span> promises.<span class="hljs-built_in">count</span> &gt; <span class="hljs-number">0</span> <span class="hljs-keyword">else</span> {
-        <span class="hljs-keyword">return</span> .value([])
-    }
+<span class="token comment">// MARK: `any` function</span>
+<span class="token keyword">func</span> any<span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span><span class="token number">_</span> promises<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token builtin">Promise</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token builtin">Promise</span><span class="token operator">&lt;</span><span class="token punctuation">[</span><span class="token builtin">Maybe</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">]</span><span class="token operator">></span> <span class="token punctuation">{</span>
+    <span class="token keyword">guard</span> promises<span class="token punctuation">.</span><span class="token builtin">count</span> <span class="token operator">></span> <span class="token number">0</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token punctuation">.</span><span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
     
-    <span class="hljs-keyword">let</span> (finalPromise, finalResolver) = <span class="hljs-type">Promise</span>&lt;[<span class="hljs-type">Maybe</span>&lt;<span class="hljs-type">T</span>&gt;]&gt;.pending()
+    <span class="token keyword">let</span> <span class="token punctuation">(</span>finalPromise<span class="token punctuation">,</span> finalResolver<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token builtin">Promise</span><span class="token operator">&lt;</span><span class="token punctuation">[</span><span class="token builtin">Maybe</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">]</span><span class="token operator">></span><span class="token punctuation">.</span><span class="token function">pending</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
     
-    <span class="hljs-keyword">let</span> barrier = <span class="hljs-type">DispatchQueue</span>(label: <span class="hljs-string">"org.promisekit.barrier.any"</span>, attributes: .concurrent)
+    <span class="token keyword">let</span> barrier <span class="token operator">=</span> <span class="token function">DispatchQueue</span><span class="token punctuation">(</span>label<span class="token punctuation">:</span> <span class="token string">"org.promisekit.barrier.any"</span><span class="token punctuation">,</span> attributes<span class="token punctuation">:</span> <span class="token punctuation">.</span>concurrent<span class="token punctuation">)</span>
     
-    <span class="hljs-keyword">var</span> allValues = [<span class="hljs-type">Maybe</span>&lt;<span class="hljs-type">T</span>&gt;]()
-    <span class="hljs-keyword">var</span> errorCount = <span class="hljs-number">0</span>
+    <span class="token keyword">var</span> allValues <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token builtin">Maybe</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">]</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">var</span> errorCount <span class="token operator">=</span> <span class="token number">0</span>
     
-    <span class="hljs-comment">// Run each promise and convert its result into a Maybe</span>
-    <span class="hljs-keyword">for</span> promise <span class="hljs-keyword">in</span> promises {
-        promise.pipe { result <span class="hljs-keyword">in</span>
-            barrier.sync(flags: .barrier) {
-                <span class="hljs-keyword">guard</span> finalPromise.isPending <span class="hljs-keyword">else</span> { <span class="hljs-keyword">return</span> }
+    <span class="token comment">// Run each promise and convert its result into a Maybe</span>
+    <span class="token keyword">for</span> promise <span class="token keyword">in</span> promises <span class="token punctuation">{</span>
+        promise<span class="token punctuation">.</span>pipe <span class="token punctuation">{</span> result <span class="token keyword">in</span>
+            barrier<span class="token punctuation">.</span><span class="token function">sync</span><span class="token punctuation">(</span>flags<span class="token punctuation">:</span> <span class="token punctuation">.</span>barrier<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">guard</span> finalPromise<span class="token punctuation">.</span>isPending <span class="token keyword">else</span> <span class="token punctuation">{</span> <span class="token keyword">return</span> <span class="token punctuation">}</span>
                 
-                <span class="hljs-keyword">switch</span> result {
-                <span class="hljs-keyword">case</span> .rejected(<span class="hljs-keyword">let</span> error):
-                    allValues.append(<span class="hljs-type">Maybe</span>&lt;<span class="hljs-type">T</span>&gt;(error))
-                    errorCount += <span class="hljs-number">1</span>
-                <span class="hljs-keyword">case</span> .fulfilled(<span class="hljs-keyword">let</span> value):
-                    allValues.append(<span class="hljs-type">Maybe</span>&lt;<span class="hljs-type">T</span>&gt;(value))
-                }
-            }
-        }
-    }
+                <span class="token keyword">switch</span> result <span class="token punctuation">{</span>
+                <span class="token keyword">case</span> <span class="token punctuation">.</span><span class="token function">rejected</span><span class="token punctuation">(</span><span class="token keyword">let</span> error<span class="token punctuation">)</span><span class="token punctuation">:</span>
+                    allValues<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token builtin">Maybe</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span>error<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                    errorCount <span class="token operator">+</span><span class="token operator">=</span> <span class="token number">1</span>
+                <span class="token keyword">case</span> <span class="token punctuation">.</span><span class="token function">fulfilled</span><span class="token punctuation">(</span><span class="token keyword">let</span> value<span class="token punctuation">)</span><span class="token punctuation">:</span>
+                    allValues<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token builtin">Maybe</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span>value<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
     
-    <span class="hljs-keyword">if</span> errorCount == promises.<span class="hljs-built_in">count</span> {
-        <span class="hljs-comment">// Everything failed; reject the whole promise</span>
-        finalResolver.reject(<span class="hljs-type">AllPromisesFailedError</span>(promises: promises))
-    } <span class="hljs-keyword">else</span> {
-        finalResolver.fulfill(allValues)
-    }
+    <span class="token keyword">if</span> errorCount <span class="token operator">==</span> promises<span class="token punctuation">.</span><span class="token builtin">count</span> <span class="token punctuation">{</span>
+        <span class="token comment">// Everything failed; reject the whole promise</span>
+        finalResolver<span class="token punctuation">.</span><span class="token function">reject</span><span class="token punctuation">(</span><span class="token function">AllPromisesFailedError</span><span class="token punctuation">(</span>promises<span class="token punctuation">:</span> promises<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+        finalResolver<span class="token punctuation">.</span><span class="token function">fulfill</span><span class="token punctuation">(</span>allValues<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
     
-    <span class="hljs-keyword">return</span> finalPromise
-}
+    <span class="token keyword">return</span> finalPromise
+<span class="token punctuation">}</span>
 </code></pre>
 <h2>The Implementation</h2>
 <p>To start, I define a <code>Maybe</code> enum like that found in Google’s Promises library. It lets you pass a value or an error, but not both.</p>
 <p>Next, I define a simple <code>AllPromisesFailedError</code> that accepts an array of all the original (ie. pending) promises, which could be useful for debugging if one loses access to the original promises otherwise.</p>
 <p>Now for the actual <code>any</code> function (I decided to name it this over <code>some</code>). Let’s take a look:</p>
-<pre><code class="language-swift"><span class="hljs-keyword">guard</span> promises.<span class="hljs-built_in">count</span> &gt; <span class="hljs-number">0</span> <span class="hljs-keyword">else</span> {
-    <span class="hljs-keyword">return</span> .value([])
-}
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">guard</span> promises<span class="token punctuation">.</span><span class="token builtin">count</span> <span class="token operator">></span> <span class="token number">0</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token punctuation">.</span><span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <p>This guard simply checks to make sure that promises are actually passed. Otherwise, it returns a promise pre-fulfilled with an empty array since no extra work is needed.</p>
-<pre><code class="language-swift"><span class="hljs-keyword">let</span> (finalPromise, finalResolver) = <span class="hljs-type">Promise</span>&lt;[<span class="hljs-type">Maybe</span>&lt;<span class="hljs-type">T</span>&gt;]&gt;.pending()
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">let</span> <span class="token punctuation">(</span>finalPromise<span class="token punctuation">,</span> finalResolver<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token builtin">Promise</span><span class="token operator">&lt;</span><span class="token punctuation">[</span><span class="token builtin">Maybe</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">]</span><span class="token operator">></span><span class="token punctuation">.</span><span class="token function">pending</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 </code></pre>
 <p>Here we create the aggregate promise and its resolver in a pending state, which means that we don’t have to provide a closure for it right away; instead we can resolve/reject it later on without escaping the current scope.</p>
-<pre><code class="language-swift"><span class="hljs-keyword">let</span> barrier = <span class="hljs-type">DispatchQueue</span>(label: <span class="hljs-string">"org.promisekit.barrier.any"</span>, attributes: .concurrent)
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">let</span> barrier <span class="token operator">=</span> <span class="token function">DispatchQueue</span><span class="token punctuation">(</span>label<span class="token punctuation">:</span> <span class="token string">"org.promisekit.barrier.any"</span><span class="token punctuation">,</span> attributes<span class="token punctuation">:</span> <span class="token punctuation">.</span>concurrent<span class="token punctuation">)</span>
 </code></pre>
 <p>Next, we create a <code>DispatchQueue</code> for this aggregate promise, so it doesn’t block any other threads in the app. I copy/pasted this directly from the <code>when</code> function and simply renamed the queue’s name from <code>when</code> to <code>any</code> so no conflicts arise.</p>
-<pre><code class="language-swift"><span class="hljs-keyword">var</span> allValues = [<span class="hljs-type">Maybe</span>&lt;<span class="hljs-type">T</span>&gt;]()
-<span class="hljs-keyword">var</span> errorCount = <span class="hljs-number">0</span>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">var</span> allValues <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token builtin">Maybe</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">]</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token keyword">var</span> errorCount <span class="token operator">=</span> <span class="token number">0</span>
 </code></pre>
 <p>These variables will keep track of all of the <code>Maybe</code>s and count how many promises reject.</p>
-<pre><code class="language-swift"><span class="hljs-keyword">for</span> promise <span class="hljs-keyword">in</span> promises {
-    promise.pipe { result <span class="hljs-keyword">in</span>
-        barrier.sync(flags: .barrier) {
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">for</span> promise <span class="token keyword">in</span> promises <span class="token punctuation">{</span>
+    promise<span class="token punctuation">.</span>pipe <span class="token punctuation">{</span> result <span class="token keyword">in</span>
+        barrier<span class="token punctuation">.</span><span class="token function">sync</span><span class="token punctuation">(</span>flags<span class="token punctuation">:</span> <span class="token punctuation">.</span>barrier<span class="token punctuation">)</span> <span class="token punctuation">{</span>
 </code></pre>
 <p>Now we can begin iterating over the promises, executing each one and capturing its result.</p>
-<pre><code class="language-swift"><span class="hljs-keyword">guard</span> finalPromise.isPending <span class="hljs-keyword">else</span> { <span class="hljs-keyword">return</span> }
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">guard</span> finalPromise<span class="token punctuation">.</span>isPending <span class="token keyword">else</span> <span class="token punctuation">{</span> <span class="token keyword">return</span> <span class="token punctuation">}</span>
 
-<span class="hljs-keyword">switch</span> result {
-<span class="hljs-keyword">case</span> .rejected(<span class="hljs-keyword">let</span> error):
-    allValues.append(<span class="hljs-type">Maybe</span>&lt;<span class="hljs-type">T</span>&gt;(error))
-    errorCount += <span class="hljs-number">1</span>
-<span class="hljs-keyword">case</span> .fulfilled(<span class="hljs-keyword">let</span> value):
-    allValues.append(<span class="hljs-type">Maybe</span>&lt;<span class="hljs-type">T</span>&gt;(value))
-}
+<span class="token keyword">switch</span> result <span class="token punctuation">{</span>
+<span class="token keyword">case</span> <span class="token punctuation">.</span><span class="token function">rejected</span><span class="token punctuation">(</span><span class="token keyword">let</span> error<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    allValues<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token builtin">Maybe</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span>error<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    errorCount <span class="token operator">+</span><span class="token operator">=</span> <span class="token number">1</span>
+<span class="token keyword">case</span> <span class="token punctuation">.</span><span class="token function">fulfilled</span><span class="token punctuation">(</span><span class="token keyword">let</span> value<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    allValues<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token builtin">Maybe</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span>value<span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <p>For each promise, we first check that the aggregate promise is still pending (which it should be). Then, we check the promise’s result: if it’s rejected with an error, we increase the error count and wrap the error in a <code>Maybe.error</code>; if it’s fulfilled, we wrap the value in a <code>Maybe.value</code>. Either way, the promise’s result gets converted to a <code>Maybe</code> type which the developer can access later.</p>
-<pre><code class="language-swift"><span class="hljs-keyword">if</span> errorCount == promises.<span class="hljs-built_in">count</span> {
-    <span class="hljs-comment">// Everything failed; reject the whole promise</span>
-    finalResolver.reject(<span class="hljs-type">AllPromisesFailedError</span>(promises: promises))
-} <span class="hljs-keyword">else</span> {
-    finalResolver.fulfill(allValues)
-}
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">if</span> errorCount <span class="token operator">==</span> promises<span class="token punctuation">.</span><span class="token builtin">count</span> <span class="token punctuation">{</span>
+    <span class="token comment">// Everything failed; reject the whole promise</span>
+    finalResolver<span class="token punctuation">.</span><span class="token function">reject</span><span class="token punctuation">(</span><span class="token function">AllPromisesFailedError</span><span class="token punctuation">(</span>promises<span class="token punctuation">:</span> promises<span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+    finalResolver<span class="token punctuation">.</span><span class="token function">fulfill</span><span class="token punctuation">(</span>allValues<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
 
-<span class="hljs-keyword">return</span> finalPromise
+<span class="token keyword">return</span> finalPromise
 </code></pre>
 <p>Now that all of the promises have been executed and their values converted, we can return the final aggregate promise. Before we do, we fulfill or reject the promise accordingly: if all the promises failed, we reject with an <code>AllPromisesFailedError</code>; otherwise, we return all of the <code>Maybe</code>s. Since they were stored in an array that was filled by essentially “mapping” over each promise, we know that the <code>Maybe</code>s will be the same order in which the promises were originally passed.</p>
 <h2>Usage</h2>
 <p>Using the <code>any</code> function is simple. Just pass the promises to it, either as a list of parameters or as an array. You can then access all the fulfilled values and the rejected errors in the <code>then</code>/<code>done</code> function.</p>
-<pre><code class="language-swift"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">TerribleError</span>: <span class="hljs-title">Error</span> </span>{
-    <span class="hljs-keyword">let</span> reason: <span class="hljs-type">String</span>
-}
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">struct</span> <span class="token builtin">TerribleError</span><span class="token punctuation">:</span> <span class="token builtin">Error</span> <span class="token punctuation">{</span>
+    <span class="token keyword">let</span> reason<span class="token punctuation">:</span> <span class="token builtin">String</span>
+<span class="token punctuation">}</span>
 
-<span class="hljs-keyword">let</span> promises: [<span class="hljs-type">Promise</span>&lt;<span class="hljs-type">String</span>&gt;] = [
-    <span class="hljs-type">Promise</span>.value(<span class="hljs-string">"Promise 1"</span>), <span class="hljs-comment">// automatically fulfilled promise</span>
-    <span class="hljs-type">Promise</span>(error: <span class="hljs-type">TerribleError</span>(reason: <span class="hljs-string">"Promise 2"</span>)), <span class="hljs-comment">// automatically rejected promise</span>
-    <span class="hljs-type">Promise</span>.value(<span class="hljs-string">"Promise 3"</span>)
-]
+<span class="token keyword">let</span> promises<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token builtin">Promise</span><span class="token operator">&lt;</span><span class="token builtin">String</span><span class="token operator">></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">[</span>
+    <span class="token builtin">Promise</span><span class="token punctuation">.</span><span class="token function">value</span><span class="token punctuation">(</span><span class="token string">"Promise 1"</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token comment">// automatically fulfilled promise</span>
+    <span class="token function">Promise</span><span class="token punctuation">(</span>error<span class="token punctuation">:</span> <span class="token function">TerribleError</span><span class="token punctuation">(</span>reason<span class="token punctuation">:</span> <span class="token string">"Promise 2"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token comment">// automatically rejected promise</span>
+    <span class="token builtin">Promise</span><span class="token punctuation">.</span><span class="token function">value</span><span class="token punctuation">(</span><span class="token string">"Promise 3"</span><span class="token punctuation">)</span>
+<span class="token punctuation">]</span>
 
-any(promises).done { result <span class="hljs-keyword">in</span>
-    <span class="hljs-keyword">let</span> successCount = result.<span class="hljs-built_in">filter</span>({ $<span class="hljs-number">0</span>.isSuccess }).<span class="hljs-built_in">count</span>
-    <span class="hljs-keyword">let</span> errorCount = result.<span class="hljs-built_in">filter</span>({ $<span class="hljs-number">0</span>.isError }).<span class="hljs-built_in">count</span>
-    <span class="hljs-built_in">print</span>(<span class="hljs-string">"Finished with \(successCount) successes and \(errorCount) errors."</span>)
-}.<span class="hljs-keyword">catch</span> { <span class="hljs-number">_</span> <span class="hljs-keyword">in</span>
-    <span class="hljs-built_in">print</span>(<span class="hljs-string">"All the promises failed! (This shouldn't happen here)"</span>)
-}
+<span class="token function">any</span><span class="token punctuation">(</span>promises<span class="token punctuation">)</span><span class="token punctuation">.</span>done <span class="token punctuation">{</span> result <span class="token keyword">in</span>
+    <span class="token keyword">let</span> successCount <span class="token operator">=</span> result<span class="token punctuation">.</span><span class="token function">filter</span><span class="token punctuation">(</span><span class="token punctuation">{</span> $<span class="token number">0</span><span class="token punctuation">.</span>isSuccess <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">count</span>
+    <span class="token keyword">let</span> errorCount <span class="token operator">=</span> result<span class="token punctuation">.</span><span class="token function">filter</span><span class="token punctuation">(</span><span class="token punctuation">{</span> $<span class="token number">0</span><span class="token punctuation">.</span>isError <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">count</span>
+    <span class="token function">print</span><span class="token punctuation">(</span><span class="token string">"Finished with <span class="token interpolation"><span class="token delimiter variable">\(</span>successCount<span class="token delimiter variable">)</span></span> successes and <span class="token interpolation"><span class="token delimiter variable">\(</span>errorCount<span class="token delimiter variable">)</span></span> errors."</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span><span class="token punctuation">.</span><span class="token keyword">catch</span> <span class="token punctuation">{</span> <span class="token number">_</span> <span class="token keyword">in</span>
+    <span class="token function">print</span><span class="token punctuation">(</span><span class="token string">"All the promises failed! (This shouldn't happen here)"</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <hr>
 <p>Thanks for reading! I was motivated to create this extension when I needed this functionality for SuperHomework’s new backend blog parser, so it can download all of the blog information at once in a clean manner, without having to worry about stopping the whole chain if there’s an error in a single post. If you’d like to learn more about SuperHomework, visit its website <a href="https://superhomeworkapp.com/">here</a>. Happy holidays!</p>
 
         </div>
+    </div>
+
+    <div class="back-to-top">
+        <a href="#">Back to top &uarr;</a>
     </div>
 </body>
 </html>
