@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Recreating the iOS 12.2 Wallet table view - Wilson Gramer’s Blog</title>
+
+    <!-- Meta -->
+    <meta name="og:title" property="og:title" content="Recreating the iOS 12.2 Wallet table view - Wilson Gramer’s Blog">
+    <meta name="robots" content="index, follow">
+
+    <!-- Local styles -->
+    <link rel="stylesheet" href="/styles/index.css">
+    <link rel="stylesheet" href="/styles/prism.css">
+
+    <!-- Google fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Crimson+Pro:200,200i,600,600i|Fira+Code:200&display=swap">
+</head>
+
+<body>
+    <div class="navbar">
+        <a href="/">Wilson Gramer’s Blog</a>
+    </div>
+
+    <div class="post">
+        <h1 class="title">Recreating the iOS 12.2 Wallet table view</h1>
+        <p class="post-date">February 2, 2019</p>
+
+        <div class="content">
+            <p><strong>UPDATE:</strong> This feature is now built-in starting with iOS 13 via the <code>insetGrouped</code> table view style!</p>
+<hr>
+<p>The Wallet app was redesigned in iOS 12.2 with a fresher, more rounded look. This is most prominent in the table views scattered throughout the app — sections are rounded at the edges, similar how a detail table view looks on iPad. It looks really good everywhere, though, so let’s try to recreate it!</p>
+<p>(TL;DR: <a href="https://gist.github.com/Wilsonator5000/67e1dd18cda7ab46d507a165d6d1bc42">Here’s the code.</a>)</p>
+<p><img src="https://wgramer.files.wordpress.com/2019/02/img_4039.jpg?w=262&amp;h=566" alt="The iOS 12.2 Wallet app has a fresher, more rounded look"></p>
+<p>I’ll be using my app <a href="http://superhomeworkapp.com/">SuperHomework</a> for this, but of course the code should work on any iOS app. I’m also using the iOS 12.2 beta (it should work on any iOS 12.x release, though) and Swift 4.2, the latest versions at the time of writing. I should also note that part of this implementation was taken from <a href="https://stackoverflow.com/a/19731571/5569234">this answer</a> and part of <a href="https://stackoverflow.com/a/48346782/5569234">this answer</a> on Stack Overflow.</p>
+<p>Let’s get started! The first thing you’ll notice is how the section insets are increased in the Wallet app. I was experiencing issues setting <code>UITableView.contentInset</code> (which you would most likely want to do if you can get it working), so instead I just applied constraints to the left and right edges of the table view using <a href="https://github.com/SnapKit/SnapKit">SnapKit</a> and set the background color of the main view to that of the table view, giving a seamless look.</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">self</span><span class="token punctuation">.</span>tableView<span class="token punctuation">.</span>snp<span class="token punctuation">.</span>remakeConstraints <span class="token punctuation">{</span> make <span class="token keyword">in</span>
+    make<span class="token punctuation">.</span>top<span class="token punctuation">.</span>bottom<span class="token punctuation">.</span><span class="token function">equalToSuperview</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    make<span class="token punctuation">.</span><span class="token keyword">left</span><span class="token punctuation">.</span><span class="token keyword">right</span><span class="token punctuation">.</span><span class="token function">equalToSuperview</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">inset</span><span class="token punctuation">(</span><span class="token number">16</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">self</span><span class="token punctuation">.</span>view<span class="token punctuation">.</span>backgroundColor <span class="token operator">=</span> <span class="token keyword">self</span><span class="token punctuation">.</span>tableView<span class="token punctuation">.</span>backgroundColor
+</code></pre>
+<p>Next, I created a <code>UITableView</code> extension to make the following implementation easier to apply to many different table views.</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">extension</span> <span class="token builtin">UITableView</span> <span class="token punctuation">{</span>
+    <span class="token keyword">func</span> <span class="token function">useRoundedSectionCorners</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// This will be called in `viewDidLoad()` to set up the table view</span>
+    <span class="token punctuation">}</span>
+    
+    <span class="token keyword">func</span> <span class="token function">display</span><span class="token punctuation">(</span>withRoundedSectionCorners cell<span class="token punctuation">:</span> <span class="token builtin">UITableViewCell</span><span class="token punctuation">,</span> at indexPath<span class="token punctuation">:</span> <span class="token builtin">IndexPath</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// This will be called in `tableView(_:willDisplay:forRowAt:)` to render each cell</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Inside the <code>useRoundedSectionCorners</code> method, I disabled the default separator line that runs through all of the cells and adds a section border — we’ll write our own separator in a bit. I also removed all of the excess padding around the edges of the table view that section headers/footers use to indent themselves.</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">func</span> <span class="token function">useRoundedSectionCorners</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">self</span><span class="token punctuation">.</span>separatorStyle <span class="token operator">=</span> <span class="token punctuation">.</span><span class="token keyword">none</span>
+    <span class="token keyword">self</span><span class="token punctuation">.</span>separatorInset <span class="token operator">=</span> <span class="token function">UIEdgeInsets</span><span class="token punctuation">(</span>top<span class="token punctuation">:</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token keyword">left</span><span class="token punctuation">:</span> <span class="token keyword">self</span><span class="token punctuation">.</span>separatorInset<span class="token punctuation">.</span><span class="token keyword">left</span><span class="token punctuation">,</span> bottom<span class="token punctuation">:</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token keyword">right</span><span class="token punctuation">:</span> <span class="token number">0</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Now let’s jump into <code>display(withRoundedSectionCorners:at:)</code>. The first thing we need to do is determine which modifications to make on the cell — that is, we don’t want to round the corners of a cell that’s in the middle of a section and whatnot. We can do that by passing the cell’s <code>indexPath</code> to the method and doing some math:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">func</span> <span class="token function">display</span><span class="token punctuation">(</span>withRoundedSectionCorners cell<span class="token punctuation">:</span> <span class="token builtin">UITableViewCell</span><span class="token punctuation">,</span> at indexPath<span class="token punctuation">:</span> <span class="token builtin">IndexPath</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment">// Determine what modifications to make</span>
+    <span class="token keyword">let</span> numberOfRowsInSection <span class="token operator">=</span> <span class="token keyword">self</span><span class="token punctuation">.</span><span class="token function">numberOfRows</span><span class="token punctuation">(</span>inSection<span class="token punctuation">:</span> indexPath<span class="token punctuation">.</span>section<span class="token punctuation">)</span>
+
+    <span class="token keyword">var</span> shouldRoundTop <span class="token operator">=</span> <span class="token boolean">false</span>
+    <span class="token keyword">var</span> shouldRoundBottom <span class="token operator">=</span> <span class="token boolean">false</span>
+
+    <span class="token keyword">if</span> indexPath<span class="token punctuation">.</span>row <span class="token operator">==</span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span> indexPath<span class="token punctuation">.</span>row <span class="token operator">==</span> numberOfRowsInSection <span class="token operator">-</span> <span class="token number">1</span> <span class="token punctuation">{</span>
+        <span class="token comment">// the cell is the only one in the section</span>
+        shouldRoundTop <span class="token operator">=</span> <span class="token boolean">true</span>
+        shouldRoundBottom <span class="token operator">=</span> <span class="token boolean">true</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> indexPath<span class="token punctuation">.</span>row <span class="token operator">==</span> <span class="token number">0</span> <span class="token punctuation">{</span>
+        <span class="token comment">// the cell is the first in the section</span>
+        shouldRoundTop <span class="token operator">=</span> <span class="token boolean">true</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> indexPath<span class="token punctuation">.</span>row <span class="token operator">==</span> numberOfRowsInSection <span class="token operator">-</span> <span class="token number">1</span> <span class="token punctuation">{</span>
+        <span class="token comment">// the cell is the last in the section</span>
+        shouldRoundBottom <span class="token operator">=</span> <span class="token boolean">true</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Next, we’ll round the corners of the cell based on the calculations we just did. This is achieved using a <code>UIBezierPath</code> with our desired corner radius (12pt in this case to match the Wallet app).</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">func</span> <span class="token function">display</span><span class="token punctuation">(</span>withRoundedSectionCorners cell<span class="token punctuation">:</span> <span class="token builtin">UITableViewCell</span><span class="token punctuation">,</span> at indexPath<span class="token punctuation">:</span> <span class="token builtin">IndexPath</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment">// Determine what modifications to make</span>
+    <span class="token comment">// ...</span>
+    
+    <span class="token comment">// Round corners if applicable</span>
+    <span class="token keyword">if</span> shouldRoundTop <span class="token operator">&amp;&amp;</span> shouldRoundBottom <span class="token punctuation">{</span>
+        cell<span class="token punctuation">.</span>layer<span class="token punctuation">.</span>cornerRadius <span class="token operator">=</span> <span class="token number">10</span>
+        cell<span class="token punctuation">.</span>layer<span class="token punctuation">.</span>masksToBounds <span class="token operator">=</span> <span class="token boolean">true</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> shouldRoundTop <span class="token operator">||</span> shouldRoundBottom <span class="token punctuation">{</span>
+        <span class="token keyword">let</span> shape <span class="token operator">=</span> <span class="token function">CAShapeLayer</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword">let</span> rect <span class="token operator">=</span> <span class="token function">CGRect</span><span class="token punctuation">(</span>x<span class="token punctuation">:</span> <span class="token number">0</span><span class="token punctuation">,</span> y<span class="token punctuation">:</span> <span class="token number">0</span><span class="token punctuation">,</span> width<span class="token punctuation">:</span> cell<span class="token punctuation">.</span>bounds<span class="token punctuation">.</span>width<span class="token punctuation">,</span> height<span class="token punctuation">:</span> cell<span class="token punctuation">.</span>bounds<span class="token punctuation">.</span>size<span class="token punctuation">.</span>height<span class="token punctuation">)</span>
+        <span class="token keyword">let</span> corners<span class="token punctuation">:</span> <span class="token builtin">UIRectCorner</span> <span class="token operator">=</span> shouldRoundTop <span class="token operator">?</span> <span class="token punctuation">[</span><span class="token punctuation">.</span>topLeft<span class="token punctuation">,</span> <span class="token punctuation">.</span>topRight<span class="token punctuation">]</span> <span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token punctuation">.</span>bottomRight<span class="token punctuation">,</span> <span class="token punctuation">.</span>bottomLeft<span class="token punctuation">]</span>
+
+        shape<span class="token punctuation">.</span>path <span class="token operator">=</span> <span class="token function">UIBezierPath</span><span class="token punctuation">(</span>roundedRect<span class="token punctuation">:</span> rect<span class="token punctuation">,</span> byRoundingCorners<span class="token punctuation">:</span> corners<span class="token punctuation">,</span> cornerRadii<span class="token punctuation">:</span> <span class="token function">CGSize</span><span class="token punctuation">(</span>width<span class="token punctuation">:</span> <span class="token number">12</span><span class="token punctuation">,</span> height<span class="token punctuation">:</span> <span class="token number">12</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>cgPath
+        cell<span class="token punctuation">.</span>layer<span class="token punctuation">.</span>mask <span class="token operator">=</span> shape
+        cell<span class="token punctuation">.</span>layer<span class="token punctuation">.</span>masksToBounds <span class="token operator">=</span> <span class="token boolean">true</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Finally, we need to draw our own separator line for cells that are in the middle of a section, if the section has multiple rows.</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">func</span> <span class="token function">display</span><span class="token punctuation">(</span>withRoundedSectionCorners cell<span class="token punctuation">:</span> <span class="token builtin">UITableViewCell</span><span class="token punctuation">,</span> at indexPath<span class="token punctuation">:</span> <span class="token builtin">IndexPath</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment">// Determine what modifications to make</span>
+    <span class="token comment">// ...</span>
+    
+    <span class="token comment">// Round corners if applicable</span>
+    <span class="token comment">// ...</span>
+    
+    <span class="token comment">// Show separator if applicable</span>
+    <span class="token keyword">if</span> numberOfRowsInSection <span class="token operator">></span> <span class="token number">1</span> <span class="token operator">&amp;&amp;</span> indexPath<span class="token punctuation">.</span>row <span class="token operator">&lt;</span> numberOfRowsInSection <span class="token operator">-</span> <span class="token number">1</span> <span class="token punctuation">{</span>
+        <span class="token keyword">let</span> bottomBorder <span class="token operator">=</span> <span class="token function">CALayer</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        bottomBorder<span class="token punctuation">.</span>frame <span class="token operator">=</span> <span class="token function">CGRect</span><span class="token punctuation">(</span>x<span class="token punctuation">:</span> <span class="token keyword">self</span><span class="token punctuation">.</span>separatorInset<span class="token punctuation">.</span><span class="token keyword">left</span><span class="token punctuation">,</span> y<span class="token punctuation">:</span> cell<span class="token punctuation">.</span>bounds<span class="token punctuation">.</span>maxY <span class="token operator">-</span> <span class="token number">0.3</span><span class="token punctuation">,</span> width<span class="token punctuation">:</span> cell<span class="token punctuation">.</span>contentView<span class="token punctuation">.</span>frame<span class="token punctuation">.</span>size<span class="token punctuation">.</span>width<span class="token punctuation">,</span> height<span class="token punctuation">:</span> <span class="token number">0.3</span><span class="token punctuation">)</span>
+        bottomBorder<span class="token punctuation">.</span>backgroundColor <span class="token operator">=</span> <span class="token keyword">self</span><span class="token punctuation">.</span>separatorColor<span class="token operator">?</span><span class="token punctuation">.</span>cgColor
+
+        cell<span class="token punctuation">.</span>contentView<span class="token punctuation">.</span>layer<span class="token punctuation">.</span><span class="token function">addSublayer</span><span class="token punctuation">(</span>bottomBorder<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Now we’re all set to implement this in our own table view! We can do so by calling <code>useRoundedSectionCorners()</code> on our table view in our view controller’s <code>viewDidLoad()</code>, and by calling <code>display(withRoundedSectionCorners:at:)</code> inside our table view delegate’s <code>tableView(_:willDisplay:forRowAt:)</code> method, like so:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">override</span> <span class="token keyword">func</span> <span class="token function">viewDidLoad</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">super</span><span class="token punctuation">.</span><span class="token function">viewDidLoad</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    
+    <span class="token comment">// Add padding to the left and right sides</span>
+    <span class="token keyword">self</span><span class="token punctuation">.</span>tableView<span class="token punctuation">.</span>snp<span class="token punctuation">.</span>remakeConstraints <span class="token punctuation">{</span> make <span class="token keyword">in</span>
+        make<span class="token punctuation">.</span>top<span class="token punctuation">.</span>bottom<span class="token punctuation">.</span><span class="token function">equalToSuperview</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        make<span class="token punctuation">.</span><span class="token keyword">left</span><span class="token punctuation">.</span><span class="token keyword">right</span><span class="token punctuation">.</span><span class="token function">equalToSuperview</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">inset</span><span class="token punctuation">(</span><span class="token number">16</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">self</span><span class="token punctuation">.</span>view<span class="token punctuation">.</span>backgroundColor <span class="token operator">=</span> <span class="token keyword">self</span><span class="token punctuation">.</span>tableView<span class="token punctuation">.</span>backgroundColor
+    
+    <span class="token comment">// Enable rounded section corners</span>
+    <span class="token keyword">self</span><span class="token punctuation">.</span>tableView<span class="token punctuation">.</span><span class="token function">useRoundedSectionCorners</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">func</span> <span class="token function">tableView</span><span class="token punctuation">(</span><span class="token number">_</span> tableView<span class="token punctuation">:</span> <span class="token builtin">UITableView</span><span class="token punctuation">,</span> willDisplay cell<span class="token punctuation">:</span> <span class="token builtin">UITableViewCell</span><span class="token punctuation">,</span> forRowAt indexPath<span class="token punctuation">:</span> <span class="token builtin">IndexPath</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    tableView<span class="token punctuation">.</span><span class="token function">display</span><span class="token punctuation">(</span>withRoundedSectionCorners<span class="token punctuation">:</span> cell<span class="token punctuation">,</span> at<span class="token punctuation">:</span> indexPath<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>…and here’s our final result!</p>
+<p><img src="https://wgramer.files.wordpress.com/2019/02/img_4042.png?w=268&amp;h=581" alt="Our recreation of the Wallet app’s table view as shown in SuperHomework"></p>
+<hr>
+<p>Thanks for reading! If you want to try this out in your app, download the full code <a href="https://gist.github.com/Wilsonator5000/67e1dd18cda7ab46d507a165d6d1bc42">here</a>.</p>
+
+        </div>
+    </div>
+
+    <div class="back-to-top">
+        <a href="#">Back to top &uarr;</a>
+    </div>
+</body>
+</html>

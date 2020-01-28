@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>What does _: (nameless argument) mean in Swift? - Wilson Gramer’s Blog</title>
+
+    <!-- Meta -->
+    <meta name="og:title" property="og:title" content="What does _: (nameless argument) mean in Swift? - Wilson Gramer’s Blog">
+    <meta name="robots" content="index, follow">
+
+    <!-- Local styles -->
+    <link rel="stylesheet" href="/styles/index.css">
+    <link rel="stylesheet" href="/styles/prism.css">
+
+    <!-- Google fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Crimson+Pro:200,200i,600,600i|Fira+Code:200&display=swap">
+</head>
+
+<body>
+    <div class="navbar">
+        <a href="/">Wilson Gramer’s Blog</a>
+    </div>
+
+    <div class="post">
+        <h1 class="title">What does _: (nameless argument) mean in Swift?</h1>
+        <p class="post-date">December 18, 2018</p>
+
+        <div class="content">
+            <p>If you’ve dived deep enough in Swift functions you have probably come across one looking like this:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">func</span> <span class="token function">myFunc</span><span class="token punctuation">(</span><span class="token number">_</span><span class="token punctuation">:</span> <span class="token keyword">Type</span><span class="token punctuation">)</span>
+</code></pre>
+<p>After looking at it for a moment, you may have wondered, “why does this argument have no name?” Indeed, this argument cannot be used inside the function nor specified by name when calling the function.</p>
+<p>So why would something like this be useful? It essentially boils down to passing functions as parameters in other functions. Let’s say you have a function that looks like this:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">func</span> <span class="token function">run</span><span class="token punctuation">(</span>every interval<span class="token punctuation">:</span> <span class="token builtin">TimeInterval</span><span class="token punctuation">,</span> <span class="token number">_</span> closure<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token builtin">Date</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token builtin">Void</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment">// execute closure every `interval` seconds, and pass</span>
+    <span class="token comment">// the current date to it</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Now let’s say I want to update my database with the current date every 5 seconds. Pretty simple:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">struct</span> <span class="token builtin">Database</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">// ...</span>
+    
+    <span class="token keyword">func</span> <span class="token function">insert</span><span class="token punctuation">(</span>date<span class="token punctuation">:</span> <span class="token builtin">Date</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// ...</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">let</span> myDatabase <span class="token operator">=</span> <span class="token function">Database</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token function">run</span><span class="token punctuation">(</span>every<span class="token punctuation">:</span> <span class="token number">5</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> myDatabase<span class="token punctuation">.</span><span class="token function">insert</span><span class="token punctuation">(</span>date<span class="token punctuation">:</span> $<span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">}</span>
+
+<span class="token comment">// shorter</span>
+<span class="token function">run</span><span class="token punctuation">(</span>every<span class="token punctuation">:</span> <span class="token number">5</span><span class="token punctuation">,</span> myDatabase<span class="token punctuation">.</span>insert<span class="token punctuation">)</span>
+</code></pre>
+<p>(Of course, this is a silly example, but you get the idea of where all this could be used.)</p>
+<p>However, what if I have a different function that I’d intend to run at repeated intervals, that <em>doesn’t accept any parameters?</em> One way of doing this is the following:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token function">run</span><span class="token punctuation">(</span>every<span class="token punctuation">:</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token number">_</span> <span class="token keyword">in</span> <span class="token function">updateStuff</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">}</span>
+</code></pre>
+<p>Alternatively, if you have access to the function and you only intend it to be called by the <code>run</code> function, a shorter way is by using a nameless argument:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">func</span> <span class="token function">updateStuff</span><span class="token punctuation">(</span><span class="token number">_</span><span class="token punctuation">:</span> <span class="token builtin">Date</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
+</code></pre>
+<p>Now <code>updateStuff</code>‘s type is <code>(Date) -&gt; Void</code>, so you can call <code>run</code> like this:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token function">run</span><span class="token punctuation">(</span>every<span class="token punctuation">:</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">,</span> updateStuff<span class="token punctuation">)</span>
+</code></pre>
+<p>The only real-life use case I can find for nameless arguments is when using block-based timers —</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">class</span> <span class="token class-name">ViewController</span><span class="token punctuation">:</span> <span class="token builtin">UIViewController</span> <span class="token punctuation">{</span>
+    
+    <span class="token keyword">override</span> <span class="token keyword">func</span> <span class="token function">viewDidAppear</span><span class="token punctuation">(</span><span class="token number">_</span> animated<span class="token punctuation">:</span> <span class="token builtin">Bool</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">super</span><span class="token punctuation">.</span><span class="token function">viewDidAppear</span><span class="token punctuation">(</span>animated<span class="token punctuation">)</span>
+        
+        <span class="token comment">// block: accepts a (Timer) -> Void closure</span>
+        <span class="token function">Timer</span><span class="token punctuation">(</span>timeInterval<span class="token punctuation">:</span> <span class="token number">5</span><span class="token punctuation">,</span> repeats<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span> block<span class="token punctuation">:</span> <span class="token keyword">self</span><span class="token punctuation">.</span>updateUI<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+    
+    <span class="token keyword">func</span> <span class="token function">updateUI</span><span class="token punctuation">(</span><span class="token number">_</span><span class="token punctuation">:</span> <span class="token builtin">Timer</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>So, nameless arguments. Not a super neat Swift feature or a game-changer in programming productivity, but it’s nice to know that they exist. Thanks for reading!</p>
+<hr>
+<p>I stumbled across this as I’m rewriting <a href="http://superhomeworkapp.com/">SuperHomework</a>‘s backend in Swift using <a href="http://vapor.codes/">Vapor</a>. I know I haven’t put SuperHomework out there very much lately, but stay tuned for a steady flow of awesome new features soon!</p>
+
+        </div>
+    </div>
+
+    <div class="back-to-top">
+        <a href="#">Back to top &uarr;</a>
+    </div>
+</body>
+</html>

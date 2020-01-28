@@ -1,4 +1,0 @@
-{
-    "watch": ["generate.js", "posts", "styles", "templates"],
-    "ext": "*"
-}
