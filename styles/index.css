@@ -85,3 +85,7 @@ hr {
     display: block;
     margin: 0 auto;
 }
+
+.post-excerpts .post {
+    margin-bottom: 2em;
+}
