@@ -8,7 +8,7 @@ import html2plaintext from "html2plaintext";
 const postsFolder = "posts";
 const templatesFolder = "templates";
 const stylesFolder = "styles";
-const outputFolder = "docs";
+const outputFolder = "gh-pages";
 
 const markdownParser = new MarkdownIt({
     html: true,
@@ -17,9 +17,7 @@ const markdownParser = new MarkdownIt({
     typographer: true,
 });
 
-markdownParser.use(prism, {
-    
-});
+markdownParser.use(prism);
 
 const readFile = path => fse.readFile(path, "utf8");
 const saveFile = (text, path) => fse.outputFile(path, text, { encoding: "utf8" });
@@ -46,7 +44,13 @@ const postOutputPath = file => `${outputFolder}/posts/${postOutputFile(file)}`;
     const postTemplate = await readFile(`${templatesFolder}/post.html`);
 
     // Clear the output directory
-    fse.emptyDirSync(outputFolder);
+    let outputFolderContents;
+    try {
+        outputFolderContents = fse.readdirSync(outputFolder);
+    } catch {}
+    if (outputFolderContents) {
+        await Promise.all(outputFolderContents.map(file => fse.remove(`${outputFolder}/${file}`)));
+    }
 
     // Parse all the posts
     const postMarkdown = (await Promise.all(posts.map(file =>
