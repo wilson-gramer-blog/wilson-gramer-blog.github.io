@@ -49,7 +49,11 @@ const postOutputPath = file => `${outputFolder}/posts/${postOutputFile(file)}`;
         outputFolderContents = fse.readdirSync(outputFolder);
     } catch {}
     if (outputFolderContents) {
-        await Promise.all(outputFolderContents.map(file => fse.remove(`${outputFolder}/${file}`)));
+        await Promise.all(
+            outputFolderContents
+                .filter(file => file[0] != ".")
+                .map(file => fse.remove(`${outputFolder}/${file}`))
+        );
     }
 
     // Parse all the posts
