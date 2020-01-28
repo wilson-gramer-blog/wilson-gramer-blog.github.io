@@ -25,6 +25,17 @@ hr {
     padding-bottom: 1em;
 }
 
+.navbar.large {
+    padding-top: 2em;
+    font-size: 24pt;
+    font-weight: bold;
+}
+
+.navbar.large img {
+    border-radius: 50%;
+    height: 120px;
+}
+
 .back-to-top {
     padding-top: 2em;
 }
