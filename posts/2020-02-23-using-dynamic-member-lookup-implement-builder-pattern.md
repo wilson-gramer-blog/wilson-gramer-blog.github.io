@@ -7,7 +7,7 @@ SwiftUI's syntax is unmistakable in regards to building views â€” instead of ass
 
 ```swift
 Text("Hello, world!")
-	.bold()
+  .bold()
   .foregroundColor(.red)
 ```
 
@@ -137,7 +137,7 @@ In the previous example with `ConstrainedAccess`, we implemented a dynamic membe
 
 ```swift
 Builder(someInstanceOfPerson)
-	.name("Alice")
+  .name("Alice")
   .age(42)
 ```
 
@@ -153,7 +153,7 @@ So now we can do:
 
 ```swift
 Builder(someInstanceOfPerson)
-	.name("Alice")
+  .name("Alice")
   .age(42)
   .build()
 ```
@@ -223,14 +223,14 @@ One interesting potential use case for this could be, in fact, SwiftUI related â
 ```swift
 self.view.addSubview(
   UIImageView.builder()
-  	.image(UIImage(named: "..."))
+    .image(UIImage(named: "..."))
     .contentMode(.scaleAspectFit)
     .tintColor(.red)
     .constraints {
       // implementation of the `constraints` builder
       // method is left as an exercise to the reader :)
     }
-  	.build()
+    .build()
 )
 ```
 
