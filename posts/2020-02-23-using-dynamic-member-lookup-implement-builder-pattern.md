@@ -125,7 +125,7 @@ constrained.foo // error!
 constrained.name == constrained[dynamicMember: \Person.name]
 ```
 
-Now let's focus on the what our subscript is returning:
+Now let's focus on what our subscript is returning:
 
 ```swift
 subscript<U>(...) -> (U) -> Builder<T> {
@@ -158,7 +158,7 @@ Builder(someInstanceOfPerson)
   .build()
 ```
 
-And we get a `Person` value! There's one more issue, though — we have to pass in an *existing* instance of `Person`, just so its values can be modified once again. In this case, we can define a `Buildable` protocol that requires an empty initializer, so any properties must have default values:
+And we get a `Person` value! There's one more issue, though — we have to pass in an *existing* instance of `Person`, just so its values can be modified once again. Ideally we'd use our builder implementation to "initialize" our value from start to finish. In this case, we can define a `Buildable` protocol that requires an empty initializer, so any properties on the type we want to use must have default values:
 
 ```swift
 protocol Buildable {
