@@ -218,7 +218,7 @@ extension Buildable {
 }
 ```
 
-One interesting potential use case for this could be, in fact, SwiftUI related — take a look :eyes:
+One interesting potential use case for this could be, in fact, SwiftUI related — take a look 👀
 
 ```swift
 self.view.addSubview(
