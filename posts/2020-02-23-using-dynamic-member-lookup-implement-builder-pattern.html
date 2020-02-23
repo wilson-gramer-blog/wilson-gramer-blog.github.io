@@ -28,7 +28,7 @@
         <div class="content">
             <p>SwiftUI’s syntax is unmistakable in regards to building views — instead of assigning properties to your view, you just apply a modifier that returns another view:</p>
 <pre class="language-swift"><code class="language-swift"><span class="token function">Text</span><span class="token punctuation">(</span><span class="token string">"Hello, world!"</span><span class="token punctuation">)</span>
-	<span class="token punctuation">.</span><span class="token function">bold</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">.</span><span class="token function">bold</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
   <span class="token punctuation">.</span><span class="token function">foregroundColor</span><span class="token punctuation">(</span><span class="token punctuation">.</span>red<span class="token punctuation">)</span>
 </code></pre>
 <p>This “style” of writing views is very similar to the builder pattern in other languages. But let’s say that you already have a bunch of existing types in your project that you’re refactoring to use the builder pattern, or you want to apply the builder pattern to types from other libraries. It would definitely be tedious to create functions for every property in every type. Let’s see if we can use Swift’s powerful type system to do the leg work for us!</p>
@@ -128,7 +128,7 @@ constrained<span class="token punctuation">.</span>name <span class="token opera
 </code></pre>
 <p>In the previous example with <code>ConstrainedAccess</code>, we implemented a dynamic member lookup that just sent back the value of the property accessed by the key path. Here, we’re sending back a <strong>function</strong> that can be called with the value we want to assign to the given property of the underlying <code>self.value</code>. Then from that function, we return the original <code>Builder</code> instance, letting us chain multiple calls together. This gives us our SwiftUI-like syntax:</p>
 <pre class="language-swift"><code class="language-swift"><span class="token function">Builder</span><span class="token punctuation">(</span>someInstanceOfPerson<span class="token punctuation">)</span>
-	<span class="token punctuation">.</span><span class="token function">name</span><span class="token punctuation">(</span><span class="token string">"Alice"</span><span class="token punctuation">)</span>
+  <span class="token punctuation">.</span><span class="token function">name</span><span class="token punctuation">(</span><span class="token string">"Alice"</span><span class="token punctuation">)</span>
   <span class="token punctuation">.</span><span class="token function">age</span><span class="token punctuation">(</span><span class="token number">42</span><span class="token punctuation">)</span>
 </code></pre>
 <p>If you’ve been following along really closely, you may have said “But wait! That resolves to a value of <code>Builder&lt;Person&gt;</code>, not <code>Person</code>!” You would be correct — for that, we can just define a <code>build()</code> function that returns the underlying value:</p>
@@ -138,7 +138,7 @@ constrained<span class="token punctuation">.</span>name <span class="token opera
 </code></pre>
 <p>So now we can do:</p>
 <pre class="language-swift"><code class="language-swift"><span class="token function">Builder</span><span class="token punctuation">(</span>someInstanceOfPerson<span class="token punctuation">)</span>
-	<span class="token punctuation">.</span><span class="token function">name</span><span class="token punctuation">(</span><span class="token string">"Alice"</span><span class="token punctuation">)</span>
+  <span class="token punctuation">.</span><span class="token function">name</span><span class="token punctuation">(</span><span class="token string">"Alice"</span><span class="token punctuation">)</span>
   <span class="token punctuation">.</span><span class="token function">age</span><span class="token punctuation">(</span><span class="token number">42</span><span class="token punctuation">)</span>
   <span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 </code></pre>
@@ -193,14 +193,14 @@ constrained<span class="token punctuation">.</span>name <span class="token opera
 <p>One interesting potential use case for this could be, in fact, SwiftUI related — take a look :eyes:</p>
 <pre class="language-swift"><code class="language-swift"><span class="token keyword">self</span><span class="token punctuation">.</span>view<span class="token punctuation">.</span><span class="token function">addSubview</span><span class="token punctuation">(</span>
   <span class="token builtin">UIImageView</span><span class="token punctuation">.</span><span class="token function">builder</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-  	<span class="token punctuation">.</span><span class="token function">image</span><span class="token punctuation">(</span><span class="token function">UIImage</span><span class="token punctuation">(</span>named<span class="token punctuation">:</span> <span class="token string">"..."</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token function">image</span><span class="token punctuation">(</span><span class="token function">UIImage</span><span class="token punctuation">(</span>named<span class="token punctuation">:</span> <span class="token string">"..."</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
     <span class="token punctuation">.</span><span class="token function">contentMode</span><span class="token punctuation">(</span><span class="token punctuation">.</span>scaleAspectFit<span class="token punctuation">)</span>
     <span class="token punctuation">.</span><span class="token function">tintColor</span><span class="token punctuation">(</span><span class="token punctuation">.</span>red<span class="token punctuation">)</span>
     <span class="token punctuation">.</span>constraints <span class="token punctuation">{</span>
       <span class="token comment">// implementation of the `constraints` builder</span>
       <span class="token comment">// method is left as an exercise to the reader :)</span>
     <span class="token punctuation">}</span>
-  	<span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">)</span>
 </code></pre>
 <p>I hope you enjoyed this article — I hope to post more like it soon! Thanks for reading!</p>
