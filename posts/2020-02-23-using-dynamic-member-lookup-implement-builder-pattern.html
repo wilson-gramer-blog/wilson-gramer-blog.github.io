@@ -121,7 +121,7 @@ constrained<span class="token punctuation">.</span>foo <span class="token commen
 <span class="token comment">// Also note that this is all still just syntax sugar:</span>
 constrained<span class="token punctuation">.</span>name <span class="token operator">==</span> constrained<span class="token punctuation">[</span>dynamicMember<span class="token punctuation">:</span> \<span class="token builtin">Person</span><span class="token punctuation">.</span>name<span class="token punctuation">]</span>
 </code></pre>
-<p>Now let’s focus on the what our subscript is returning:</p>
+<p>Now let’s focus on what our subscript is returning:</p>
 <pre class="language-swift"><code class="language-swift"><span class="token keyword">subscript</span><span class="token operator">&lt;</span>U<span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token punctuation">(</span>U<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token builtin">Builder</span><span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token punctuation">{</span>
   <span class="token keyword">return</span> <span class="token punctuation">{</span> <span class="token keyword">self</span><span class="token punctuation">.</span>value<span class="token punctuation">[</span>keyPath<span class="token punctuation">:</span> keyPath<span class="token punctuation">]</span> <span class="token operator">=</span> $<span class="token number">0</span> <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
@@ -142,7 +142,7 @@ constrained<span class="token punctuation">.</span>name <span class="token opera
   <span class="token punctuation">.</span><span class="token function">age</span><span class="token punctuation">(</span><span class="token number">42</span><span class="token punctuation">)</span>
   <span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 </code></pre>
-<p>And we get a <code>Person</code> value! There’s one more issue, though — we have to pass in an <em>existing</em> instance of <code>Person</code>, just so its values can be modified once again. In this case, we can define a <code>Buildable</code> protocol that requires an empty initializer, so any properties must have default values:</p>
+<p>And we get a <code>Person</code> value! There’s one more issue, though — we have to pass in an <em>existing</em> instance of <code>Person</code>, just so its values can be modified once again. Ideally we’d use our builder implementation to “initialize” our value from start to finish. In this case, we can define a <code>Buildable</code> protocol that requires an empty initializer, so any properties on the type we want to use must have default values:</p>
 <pre class="language-swift"><code class="language-swift"><span class="token keyword">protocol</span> <span class="token builtin">Buildable</span> <span class="token punctuation">{</span>
   <span class="token keyword">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
