@@ -70,13 +70,13 @@ Woah! There's a lot going on there, so let's break it down step by step.
 The first thing that we need to focus on is the use of **key paths** — if you haven't heard of them before, key paths are a concise way to represent a property on a specific type. You write them as `\MyType.property`, or just `\.property` if `MyType` can be inferred. One good use of key paths is when you're mapping an array:
 
 ```swift
-let names = ["Alice", "Bob", "Charles"]
+let names = ["alice", "bob", "charles"]
 
-names.map { $0.uppercase } // ["ALICE", "BOB", "CHARLES"]
-names.map(\.uppercase)
+names.map { $0.capitalized } // ["Alice", "Bob", "Charles"]
+names.map(\.capitalized)
 ```
 
-Here, a key path is being used to specify that we want to access the `uppercase` property on each string. It's the same as creating a closure that returns the `uppercase` property, but it's a bit more concise. The type of a key path is `KeyPath<T, U>`, where `T` is the type of the value you're accessing the property of, and `U` is the type of the property being accessed.
+Here, a key path is being used to specify that we want to access the `capitalized` property on each string. It's the same as creating a closure that returns the `capitalized` property, but it's a bit more concise. The type of a key path is `KeyPath<T, U>`, where `T` is the type of the value you're accessing the property of, and `U` is the type of the property being accessed.
 
 Back to our example:
 
