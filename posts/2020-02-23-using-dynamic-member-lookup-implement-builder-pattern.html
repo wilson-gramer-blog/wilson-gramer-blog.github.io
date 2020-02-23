@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Using dynamic member lookup to implement the builder pattern - Wilson Gramer’s Blog</title>
+
+    <!-- Meta -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="og:title" property="og:title" content="Using dynamic member lookup to implement the builder pattern - Wilson Gramer’s Blog">
+    <meta name="robots" content="index, follow">
+
+    <!-- Local styles -->
+    <link rel="stylesheet" href="/styles/index.css">
+    <link rel="stylesheet" href="/styles/prism.css">
+
+    <!-- Google fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Crimson+Pro:200,200i,600,600i|Fira+Code:300&display=swap">
+</head>
+
+<body>
+    <div class="navbar">
+        <a href="/">Wilson Gramer’s Blog</a>
+    </div>
+
+    <div class="post">
+        <h1 class="title">Using dynamic member lookup to implement the builder pattern</h1>
+        <p class="post-date">February 23, 2020</p>
+
+        <div class="content">
+            <p>SwiftUI’s syntax is unmistakable in regards to building views — instead of assigning properties to your view, you just apply a modifier that returns another view:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token function">Text</span><span class="token punctuation">(</span><span class="token string">"Hello, world!"</span><span class="token punctuation">)</span>
+	<span class="token punctuation">.</span><span class="token function">bold</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">.</span><span class="token function">foregroundColor</span><span class="token punctuation">(</span><span class="token punctuation">.</span>red<span class="token punctuation">)</span>
+</code></pre>
+<p>This “style” of writing views is very similar to the builder pattern in other languages. But let’s say that you already have a bunch of existing types in your project that you’re refactoring to use the builder pattern, or you want to apply the builder pattern to types from other libraries. It would definitely be tedious to create functions for every property in every type. Let’s see if we can use Swift’s powerful type system to do the leg work for us!</p>
+<blockquote>
+<p>Note that I’m not advocating for or against using the builder pattern in a specific project — this article is more of an exploration into how to implement it in a generic fashion. With that said, let’s get started!</p>
+</blockquote>
+<p>It turns out that Swift actually lets us dynamically access properties on a given type, without having to know anything about that type beforehand, using something called <strong>dynamic member lookup</strong>. All you need to do is add the <code>@dynamicMemberLookup</code> attribute to your type, and then you can access any random property of the constraints you choose:</p>
+<pre class="language-swift"><code class="language-swift">@dynamicMemberLookup
+<span class="token keyword">struct</span> <span class="token builtin">SomeType</span> <span class="token punctuation">{</span>
+  <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">let</span> someValue <span class="token operator">=</span> <span class="token function">SomeType</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+someValue<span class="token punctuation">.</span>foo <span class="token comment">// works</span>
+someValue<span class="token punctuation">.</span>someRandomProperty <span class="token comment">// works</span>
+someValue<span class="token punctuation">.</span>asdfghjkl <span class="token comment">// works</span>
+</code></pre>
+<p>Dynamic member lookup is actually just syntax sugar for a special variant of a subscript, and it looks like this:</p>
+<pre class="language-swift"><code class="language-swift">@dynamicMemberLookup
+<span class="token keyword">struct</span> <span class="token builtin">SomeType</span> <span class="token punctuation">{</span>
+  <span class="token keyword">subscript</span><span class="token punctuation">(</span>dynamicMember key<span class="token punctuation">:</span> <span class="token builtin">String</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token builtin">Any</span> <span class="token punctuation">{</span>
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+someValue<span class="token punctuation">.</span>foo <span class="token operator">==</span> someValue<span class="token punctuation">[</span>dynamicMember<span class="token punctuation">:</span> <span class="token string">"foo"</span><span class="token punctuation">]</span>
+</code></pre>
+<p>In addition to passing an arbitrary string, you can also constrain both the <code>dynamicMember:</code> parameter and the subscript’s return value to a specific type. You can even use generics! This will make it a lot easier to implement what we’re aiming for, so let’s start by creating a generic <code>Builder</code> type:</p>
+<pre class="language-swift"><code class="language-swift">@dynamicMemberLookup
+<span class="token keyword">struct</span> <span class="token builtin">Builder</span><span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token punctuation">{</span>
+  <span class="token keyword">private</span> <span class="token keyword">var</span> value<span class="token punctuation">:</span> T
+  
+  <span class="token keyword">init</span><span class="token punctuation">(</span><span class="token number">_</span> value<span class="token punctuation">:</span> T<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">self</span><span class="token punctuation">.</span>value <span class="token operator">=</span> value
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>We can use this by calling <code>Builder(MyType())</code>. Great! Now let’s implement the subscript:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">extension</span> <span class="token builtin">Builder</span> <span class="token punctuation">{</span>
+  <span class="token keyword">subscript</span><span class="token operator">&lt;</span>U<span class="token operator">></span><span class="token punctuation">(</span>dynamicMember keyPath<span class="token punctuation">:</span> <span class="token builtin">WritableKeyPath</span><span class="token operator">&lt;</span>T<span class="token punctuation">,</span> U<span class="token operator">></span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token punctuation">(</span>U<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token builtin">Builder</span><span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token punctuation">{</span> <span class="token keyword">self</span><span class="token punctuation">.</span>value<span class="token punctuation">[</span>keyPath<span class="token punctuation">:</span> keyPath<span class="token punctuation">]</span> <span class="token operator">=</span> $<span class="token number">0</span> <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Woah! There’s a lot going on there, so let’s break it down step by step.</p>
+<p>The first thing that we need to focus on is the use of <strong>key paths</strong> — if you haven’t heard of them before, key paths are a concise way to represent a property on a specific type. You write them as <code>\MyType.property</code>, or just <code>\.property</code> if <code>MyType</code> can be inferred. One good use of key paths is when you’re mapping an array:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">let</span> names <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">"Alice"</span><span class="token punctuation">,</span> <span class="token string">"Bob"</span><span class="token punctuation">,</span> <span class="token string">"Charles"</span><span class="token punctuation">]</span>
+
+names<span class="token punctuation">.</span><span class="token builtin">map</span> <span class="token punctuation">{</span> $<span class="token number">0</span><span class="token punctuation">.</span>uppercase <span class="token punctuation">}</span> <span class="token comment">// ["ALICE", "BOB", "CHARLES"]</span>
+names<span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span>\<span class="token punctuation">.</span>uppercase<span class="token punctuation">)</span>
+</code></pre>
+<p>Here, a key path is being used to specify that we want to access the <code>uppercase</code> property on each string. It’s the same as creating a closure that returns the <code>uppercase</code> property, but it’s a bit more concise. The type of a key path is <code>KeyPath&lt;T, U&gt;</code>, where <code>T</code> is the type of the value you’re accessing the property of, and <code>U</code> is the type of the property being accessed.</p>
+<p>Back to our example:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">subscript</span><span class="token operator">&lt;</span>U<span class="token operator">></span><span class="token punctuation">(</span>dynamicMember keyPath<span class="token punctuation">:</span> <span class="token builtin">WritableKeyPath</span><span class="token operator">&lt;</span>T<span class="token punctuation">,</span> U<span class="token operator">></span><span class="token punctuation">)</span>
+</code></pre>
+<p>So here instead of using a regular key path, we’re just using a writable key path — same thing, except we also get to <strong>assign</strong> values to the property being accessed. By constraining the type of <code>dynamicMember:</code> to a key path, we only allow users of <code>Builder</code> to call functions whose name and type match that of the original value they passed into the <code>Builder</code> instance. And we get code completion now, too — neat!</p>
+<p>If that didn’t make 100% sense, here’s an example in code:</p>
+<pre class="language-swift"><code class="language-swift">@dynamicMemberLookup
+<span class="token keyword">struct</span> <span class="token builtin">UnconstrainedAccess</span> <span class="token punctuation">{</span>
+  <span class="token keyword">subscript</span><span class="token punctuation">(</span>dynamicMember key<span class="token punctuation">:</span> <span class="token builtin">String</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token builtin">Any</span> <span class="token punctuation">{</span>
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">let</span> unconstrained <span class="token operator">=</span> <span class="token function">UnconstrainedAccess</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+unconstrained<span class="token punctuation">.</span>foo <span class="token comment">// works</span>
+unconstrained<span class="token punctuation">.</span>asdfghjkl <span class="token comment">// works</span>
+
+<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+
+<span class="token keyword">struct</span> <span class="token builtin">Person</span> <span class="token punctuation">{</span>
+  <span class="token keyword">var</span> name<span class="token punctuation">:</span> <span class="token builtin">String</span>
+  <span class="token keyword">var</span> age<span class="token punctuation">:</span> <span class="token builtin">Int</span>
+<span class="token punctuation">}</span>
+
+@dynamicMemberLookup
+<span class="token keyword">struct</span> <span class="token builtin">ConstrainedAccess</span> <span class="token punctuation">{</span>
+  <span class="token keyword">subscript</span><span class="token operator">&lt;</span>U<span class="token operator">></span><span class="token punctuation">(</span>dynamicMember keyPath<span class="token punctuation">:</span> <span class="token builtin">KeyPath</span><span class="token operator">&lt;</span><span class="token builtin">Person</span><span class="token punctuation">,</span> U<span class="token operator">></span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> U <span class="token punctuation">{</span>
+    <span class="token comment">// Any arbitrary key path can be accessed using the</span>
+    <span class="token comment">// value[keyPath: ...] subscript. foo[keyPath: \.bar] == foo.bar</span>
+    <span class="token keyword">return</span> <span class="token keyword">self</span><span class="token punctuation">.</span>someInstanceOfPerson<span class="token punctuation">[</span>keyPath<span class="token punctuation">:</span> keyPath<span class="token punctuation">]</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">let</span> constrained <span class="token operator">=</span> <span class="token function">ConstrainedAccess</span><span class="token punctuation">(</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span>
+constrained<span class="token punctuation">.</span>name <span class="token comment">// works, is of type String</span>
+constrained<span class="token punctuation">.</span>age <span class="token comment">// works, is of type Int</span>
+constrained<span class="token punctuation">.</span>foo <span class="token comment">// error!</span>
+
+<span class="token comment">// Also note that this is all still just syntax sugar:</span>
+constrained<span class="token punctuation">.</span>name <span class="token operator">==</span> constrained<span class="token punctuation">[</span>dynamicMember<span class="token punctuation">:</span> \<span class="token builtin">Person</span><span class="token punctuation">.</span>name<span class="token punctuation">]</span>
+</code></pre>
+<p>Now let’s focus on the what our subscript is returning:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">subscript</span><span class="token operator">&lt;</span>U<span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token punctuation">(</span>U<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token builtin">Builder</span><span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> <span class="token punctuation">{</span> <span class="token keyword">self</span><span class="token punctuation">.</span>value<span class="token punctuation">[</span>keyPath<span class="token punctuation">:</span> keyPath<span class="token punctuation">]</span> <span class="token operator">=</span> $<span class="token number">0</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>In the previous example with <code>ConstrainedAccess</code>, we implemented a dynamic member lookup that just sent back the value of the property accessed by the key path. Here, we’re sending back a <strong>function</strong> that can be called with the value we want to assign to the given property of the underlying <code>self.value</code>. Then from that function, we return the original <code>Builder</code> instance, letting us chain multiple calls together. This gives us our SwiftUI-like syntax:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token function">Builder</span><span class="token punctuation">(</span>someInstanceOfPerson<span class="token punctuation">)</span>
+	<span class="token punctuation">.</span><span class="token function">name</span><span class="token punctuation">(</span><span class="token string">"Alice"</span><span class="token punctuation">)</span>
+  <span class="token punctuation">.</span><span class="token function">age</span><span class="token punctuation">(</span><span class="token number">42</span><span class="token punctuation">)</span>
+</code></pre>
+<p>If you’ve been following along really closely, you may have said “But wait! That resolves to a value of <code>Builder&lt;Person&gt;</code>, not <code>Person</code>!” You would be correct — for that, we can just define a <code>build()</code> function that returns the underlying value:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">extension</span> <span class="token builtin">Builder</span> <span class="token punctuation">{</span>
+  <span class="token keyword">func</span> <span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> T <span class="token punctuation">{</span> <span class="token keyword">self</span><span class="token punctuation">.</span>value <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>So now we can do:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token function">Builder</span><span class="token punctuation">(</span>someInstanceOfPerson<span class="token punctuation">)</span>
+	<span class="token punctuation">.</span><span class="token function">name</span><span class="token punctuation">(</span><span class="token string">"Alice"</span><span class="token punctuation">)</span>
+  <span class="token punctuation">.</span><span class="token function">age</span><span class="token punctuation">(</span><span class="token number">42</span><span class="token punctuation">)</span>
+  <span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<p>And we get a <code>Person</code> value! There’s one more issue, though — we have to pass in an <em>existing</em> instance of <code>Person</code>, just so its values can be modified once again. In this case, we can define a <code>Buildable</code> protocol that requires an empty initializer, so any properties must have default values:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">protocol</span> <span class="token builtin">Buildable</span> <span class="token punctuation">{</span>
+  <span class="token keyword">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>And to make our implementation even more concise, we can define a static <code>builder()</code> function directly on the <code>Buildable</code> protocol:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">extension</span> <span class="token builtin">Buildable</span> <span class="token punctuation">{</span>
+  <span class="token keyword">static</span> <span class="token keyword">func</span> <span class="token function">builder</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token builtin">Builder</span><span class="token operator">&lt;</span><span class="token keyword">Self</span><span class="token operator">></span> <span class="token punctuation">{</span>
+    <span class="token function">Builder</span><span class="token punctuation">(</span><span class="token keyword">Self</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>And now adopting the builder pattern is a breeze!</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">struct</span> <span class="token builtin">Person</span><span class="token punctuation">:</span> <span class="token builtin">Buildable</span> <span class="token punctuation">{</span>
+  <span class="token comment">// Make sure to provide default values</span>
+  <span class="token keyword">var</span> name<span class="token punctuation">:</span> <span class="token builtin">String</span> <span class="token operator">=</span> <span class="token string">""</span>
+  <span class="token keyword">var</span> age<span class="token punctuation">:</span> <span class="token builtin">Int</span> <span class="token operator">=</span> <span class="token number">0</span>
+<span class="token punctuation">}</span>
+
+<span class="token builtin">Person</span><span class="token punctuation">.</span><span class="token function">builder</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">.</span><span class="token function">name</span><span class="token punctuation">(</span><span class="token string">"Alice"</span><span class="token punctuation">)</span>
+  <span class="token punctuation">.</span><span class="token function">age</span><span class="token punctuation">(</span><span class="token number">42</span><span class="token punctuation">)</span>
+  <span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<p>Here’s the entire implementation of <code>Builder</code> and <code>Buildable</code>:</p>
+<pre class="language-swift"><code class="language-swift">@dynamicMemberLookup
+<span class="token keyword">struct</span> <span class="token builtin">Builder</span><span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token punctuation">{</span>
+  <span class="token keyword">private</span> <span class="token keyword">var</span> value<span class="token punctuation">:</span> T
+  
+  <span class="token keyword">init</span><span class="token punctuation">(</span><span class="token number">_</span> value<span class="token punctuation">:</span> T<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">self</span><span class="token punctuation">.</span>value <span class="token operator">=</span> value
+  <span class="token punctuation">}</span>
+  
+  <span class="token keyword">subscript</span><span class="token operator">&lt;</span>U<span class="token operator">></span><span class="token punctuation">(</span>dynamicMember keyPath<span class="token punctuation">:</span> <span class="token builtin">WritableKeyPath</span><span class="token operator">&lt;</span>T<span class="token punctuation">,</span> U<span class="token operator">></span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token punctuation">(</span>U<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token builtin">Builder</span><span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token punctuation">{</span> <span class="token keyword">self</span><span class="token punctuation">.</span>value<span class="token punctuation">[</span>keyPath<span class="token punctuation">:</span> keyPath<span class="token punctuation">]</span> <span class="token operator">=</span> $<span class="token number">0</span> <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">protocol</span> <span class="token builtin">Buildable</span> <span class="token punctuation">{</span>
+  <span class="token keyword">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">extension</span> <span class="token builtin">Buildable</span> <span class="token punctuation">{</span>
+  <span class="token keyword">static</span> <span class="token keyword">func</span> <span class="token function">builder</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token builtin">Builder</span><span class="token operator">&lt;</span><span class="token keyword">Self</span><span class="token operator">></span> <span class="token punctuation">{</span>
+    <span class="token function">Builder</span><span class="token punctuation">(</span><span class="token keyword">Self</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>One interesting potential use case for this could be, in fact, SwiftUI related — take a look :eyes:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">self</span><span class="token punctuation">.</span>view<span class="token punctuation">.</span><span class="token function">addSubview</span><span class="token punctuation">(</span>
+  <span class="token builtin">UIImageView</span><span class="token punctuation">.</span><span class="token function">builder</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  	<span class="token punctuation">.</span><span class="token function">image</span><span class="token punctuation">(</span><span class="token function">UIImage</span><span class="token punctuation">(</span>named<span class="token punctuation">:</span> <span class="token string">"..."</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token function">contentMode</span><span class="token punctuation">(</span><span class="token punctuation">.</span>scaleAspectFit<span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token function">tintColor</span><span class="token punctuation">(</span><span class="token punctuation">.</span>red<span class="token punctuation">)</span>
+    <span class="token punctuation">.</span>constraints <span class="token punctuation">{</span>
+      <span class="token comment">// implementation of the `constraints` builder</span>
+      <span class="token comment">// method is left as an exercise to the reader :)</span>
+    <span class="token punctuation">}</span>
+  	<span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">)</span>
+</code></pre>
+<p>I hope you enjoyed this article — I hope to post more like it soon! Thanks for reading!</p>
+
+        </div>
+    </div>
+
+    <div class="back-to-top">
+        <a href="#">Back to top &uarr;</a>
+    </div>
+</body>
+</html>
