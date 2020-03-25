@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>“Generic extensions”? - Wilson Gramer’s Blog</title>
+
+    <!-- Meta -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="og:title" property="og:title" content="“Generic extensions”? - Wilson Gramer’s Blog">
+    <meta name="robots" content="index, follow">
+
+    <!-- Local styles -->
+    <link rel="stylesheet" href="/styles/index.css">
+    <link rel="stylesheet" href="/styles/prism.css">
+
+    <!-- Google fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Crimson+Pro:200,200i,600,600i|Fira+Code:300&display=swap">
+</head>
+
+<body>
+    <div class="navbar">
+        <a href="/">Wilson Gramer’s Blog</a>
+    </div>
+
+    <div class="post">
+        <h1 class="title">“Generic extensions”?</h1>
+        <p class="post-date">March 24, 2020</p>
+
+        <div class="content">
+            <p>Currently in Swift the <code>zip</code> function is implemented similar to this:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token comment">// The actual signature/implementation is different than this for performance</span>
+<span class="token comment">// reasons, but the end functionality is the same</span>
+<span class="token keyword">func</span> zip<span class="token operator">&lt;</span><span class="token builtin">Element</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token number">_</span> array1<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token builtin">Element</span><span class="token punctuation">]</span><span class="token punctuation">,</span> array2<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token builtin">Element</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token punctuation">[</span><span class="token punctuation">(</span><span class="token builtin">Element</span><span class="token punctuation">,</span> <span class="token builtin">Element</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+</code></pre>
+<p>To make this more “Swifty”, we could make it an array initializer:</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">extension</span> <span class="token builtin">Array</span> <span class="token keyword">where</span> <span class="token builtin">Element</span> <span class="token operator">==</span> <span class="token punctuation">(</span><span class="token builtin">Element</span><span class="token punctuation">,</span> <span class="token builtin">Element</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">init</span><span class="token punctuation">(</span>zipping array1<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token builtin">Element</span><span class="token punctuation">]</span><span class="token punctuation">,</span> with array2<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token builtin">Element</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>…but wait, now we have two definitions of <code>Element</code>, with one defined in terms of other. That’s a problem, because we can’t conform <code>Element</code> to two different types at the same time, and we certainly can’t have it be defined recursively!</p>
+<p>To solve this problem, we need to be able to define <strong>“generic extensions”</strong> — I’m not really sure what that would look like or how it would work, but to my knowledge it currently isn’t possible in Swift. That’s why <code>zip</code> must be a global function — it must know the type of <code>Element</code> beforehand (via its generic argument) in order to evaluate the return type. When we’re defining extensions for existing types, that logic is kind of backwards.</p>
+<p>I’m curious as to how this could be written. Maybe something like this?</p>
+<pre class="language-swift"><code class="language-swift"><span class="token keyword">extension</span><span class="token operator">&lt;</span><span class="token builtin">ZippingElement</span><span class="token operator">></span> <span class="token builtin">Array</span> <span class="token keyword">where</span> <span class="token builtin">Element</span> <span class="token operator">==</span> <span class="token punctuation">(</span><span class="token builtin">ZippingElement</span><span class="token punctuation">,</span> <span class="token builtin">ZippingElement</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">init</span><span class="token punctuation">(</span>zipping array1<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token builtin">ZippingElement</span><span class="token punctuation">]</span><span class="token punctuation">,</span> with array2<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token builtin">ZippingElement</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>I also wonder if other languages have the concept of “generic extensions” or anything similar. I’ll do some research!</p>
+
+        </div>
+    </div>
+
+    <div class="back-to-top">
+        <a href="#">Back to top &uarr;</a>
+    </div>
+</body>
+</html>
