@@ -101,6 +101,7 @@ hr {
 
 .post .content pre > code {
     margin: unset;
+    padding: unset;
 }
 
 .post .content p > img {
