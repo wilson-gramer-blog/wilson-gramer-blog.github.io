@@ -76,10 +76,20 @@ hr {
     opacity: unset;
 }
 
+.post .content blockquote {
+    border-left: 0.25em solid #282c34;
+    margin-left: 1em;
+    padding-left: 1em;
+    color: #a2a2b3;
+}
+
 .post .content code {
     font-family: "JetBrains Mono", monospace;
     font-size: 14pt;
-    margin: 0 0.5em;
+    margin: 0 0.125em;
+    padding: 0.2em 0.25em;
+    background-color: #282c34;
+    border-radius: 0.25em;
 }
 
 .post .content pre {
