@@ -1,3 +1,15 @@
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: url('./JetBrainsMono-Regular.woff') format('woff');
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: url('./JetBrainsMono-Italic.woff') format('woff');
+    font-style: italic;
+}
+
 body {
     background-color: #232325;
     color: #dcdcef;
@@ -65,7 +77,7 @@ hr {
 }
 
 .post .content code {
-    font-family: "Fira Code", monospace;
+    font-family: "JetBrains Mono", monospace;
     font-size: 14pt;
     margin: 0 0.5em;
 }
