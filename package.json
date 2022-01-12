@@ -9,7 +9,7 @@
     "dependencies": {
         "fs-extra": "^8.1.0",
         "html2plaintext": "^2.1.2",
-        "markdown-it": "^10.0.0",
+        "markdown-it": "^12.3.2",
         "markdown-it-prism": "^2.0.3",
         "mustache": "^4.0.0",
         "yaml-front-matter": "^4.1.0"
